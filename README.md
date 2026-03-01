@@ -1,15 +1,3 @@
-<div align="center">
-  <img src="image.png" alt="graph-flow" width="300">
-  
-  # graph-flow
-  
-  ### High-Performance Workflow Framework
-  
-  *A type-safe and flexible framework for building complex and interactive workflows in Rust for AI Agents and more*
-  
-  ---
-</div>
-
 **graph-flow** is a high-performance, type-safe framework for building multi-agent workflow systems in Rust. This repository showcases real-world implementations and examples demonstrating how graph-flow enables complex, stateful AI agent orchestration for production environments.
 
 ## Why graph-flow? Why another frameowrk? 

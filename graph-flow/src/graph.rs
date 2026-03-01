@@ -116,6 +116,45 @@ impl Graph {
         self
     }
 
+    /// Add a multi-way router edge.
+    ///
+    /// The `router` closure returns the task ID to route to. The `targets` list
+    /// declares all possible destinations (used for graph validation).
+    ///
+    /// At runtime, the router result is matched against the target task IDs.
+    /// If the router returns a target not in the graph, `find_next_task` falls
+    /// back to any unconditional edge from `from`.
+    pub fn add_router_edge<F>(
+        &self,
+        from: impl Into<String>,
+        router: F,
+        targets: Vec<impl Into<String>>,
+    ) -> &Self
+    where
+        F: Fn(&Context) -> String + Send + Sync + 'static,
+    {
+        let from = from.into();
+        let target_ids: Vec<String> = targets.into_iter().map(|t| t.into()).collect();
+        let router = Arc::new(router);
+
+        let mut edges = self.edges.lock().unwrap();
+
+        for target_id in target_ids {
+            let router_clone = router.clone();
+            let tid = target_id.clone();
+            let predicate: EdgeCondition = Arc::new(move |ctx: &Context| {
+                router_clone(ctx) == tid
+            });
+            edges.push(Edge {
+                from: from.clone(),
+                to: target_id,
+                condition: Some(predicate),
+            });
+        }
+
+        self
+    }
+
     /// Execute the graph with session management
     /// This method manages the session state and returns a simple status
     pub async fn execute_session(&self, session: &mut Session) -> Result<ExecutionResult> {
@@ -359,6 +398,19 @@ impl GraphBuilder {
         F: Fn(&Context) -> bool + Send + Sync + 'static,
     {
         self.graph.add_conditional_edge(from, condition, yes, no);
+        self
+    }
+
+    pub fn add_router_edge<F>(
+        self,
+        from: impl Into<String>,
+        router: F,
+        targets: Vec<impl Into<String>>,
+    ) -> Self
+    where
+        F: Fn(&Context) -> String + Send + Sync + 'static,
+    {
+        self.graph.add_router_edge(from, router, targets);
         self
     }
 
